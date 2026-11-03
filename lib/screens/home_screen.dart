@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/launcher_controller.dart';
-import '../models/server_config.dart';
 import '../widgets/status_indicator.dart';
 import 'settings_screen.dart';
 

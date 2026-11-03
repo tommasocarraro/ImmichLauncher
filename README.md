@@ -260,19 +260,21 @@ if __name__ == "__main__":
 
 ## Building from source
 
-The repository contains the Dart sources and the Android files specific to this app (`AndroidManifest.xml` and
-`MainActivity.kt`). Generate the rest of the Android project with `flutter create`, which never overwrites existing files:
+Requirements: Flutter (stable; tested with 3.47), the Android SDK and a JDK 17 or newer.
+`flutter doctor` should show both **Flutter** and **Android toolchain** as green.
 
 ```bash
 git clone https://github.com/tommasocarraro/immich-launcher.git
 cd immich-launcher
-flutter create --org io.github.tommasocarraro --project-name immich_launcher --platforms android .
 flutter pub get
+flutter analyze
 flutter test
 flutter build apk --release      # build/app/outputs/flutter-apk/app-release.apk
 ```
 
-Requires Flutter 3.27 or newer.
+> The release build is signed with the debug key (Flutter's default), which is fine for sideloading.
+> To publish your own builds, configure a release keystore as described in
+> [Flutter's Android deployment guide](https://docs.flutter.dev/deployment/android#sign-the-app).
 
 ### Project layout
 
