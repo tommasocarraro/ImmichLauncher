@@ -1,0 +1,22 @@
+# systemd unit for the ImmichLauncher WoL relay.
+# 1. Copy wol_relay.py to /opt/immich-launcher-relay/
+# 2. Edit User=, WOL_MAC and RELAY_HOST below
+# 3. sudo cp wol-relay.service /etc/systemd/system/
+#    sudo systemctl daemon-reload && sudo systemctl enable --now wol-relay
+[Unit]
+Description=ImmichLauncher Wake-on-LAN relay
+Wants=network-online.target tailscaled.service
+After=network-online.target tailscaled.service
+
+[Service]
+Type=simple
+User=pi
+Environment=WOL_MAC=68:1D:EF:4A:6B:DA
+Environment=RELAY_HOST=0.0.0.0
+Environment=RELAY_PORT=8765
+ExecStart=/usr/bin/python3 /opt/immich-launcher-relay/wol_relay.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

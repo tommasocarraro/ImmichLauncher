@@ -1,0 +1,23 @@
+name: immich_launcher
+description: "Wake your Immich server via Wake-on-LAN (locally) or a Tailscale relay (remotely) and open Immich."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.2
+  dartssh2: ^2.11.0
+  http: ^1.2.2
+  flutter_secure_storage: ^9.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
