@@ -3,6 +3,7 @@ package io.github.tommasocarraro.immich_launcher
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -17,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel
  */
 class MainActivity : FlutterActivity() {
     private val channelName = "immich_launcher/platform"
+    private val briefLaunchRequestCode = 4201
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -27,8 +29,13 @@ class MainActivity : FlutterActivity() {
                         "isVpnActive" -> result.success(isVpnActive())
                         "isAppInstalled" ->
                             result.success(isAppInstalled(call.argument<String>("package")!!))
+                        "isAppStopped" ->
+                            result.success(isAppStopped(call.argument<String>("package")!!))
                         "launchApp" ->
                             result.success(launchApp(call.argument<String>("package")!!))
+                        "launchAppBriefly" ->
+                            result.success(launchAppBriefly(call.argument<String>("package")!!))
+                        "closeBriefApp" -> result.success(closeBriefApp())
                         "openUrlWithApp" -> result.success(
                             openUrl(call.argument<String>("url")!!, call.argument<String>("package"))
                         )
@@ -62,6 +69,40 @@ class MainActivity : FlutterActivity() {
         true
     } catch (e: PackageManager.NameNotFoundException) {
         false
+    }
+
+    /**
+     * True if [pkg] is in Android's "stopped" state (force-stopped, or killed
+     * by an aggressive battery manager). Broadcasts to such apps are dropped
+     * until one of their activities is launched again.
+     */
+    private fun isAppStopped(pkg: String): Boolean = try {
+        packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_STOPPED != 0
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
+
+    /**
+     * Opens [pkg]'s launcher activity on top of ours, in our task, so that
+     * [closeBriefApp] can dismiss it again. (Bringing ourselves back with a
+     * new activity start would be blocked: by then we are in the background.)
+     */
+    private fun launchAppBriefly(pkg: String): Boolean {
+        val intent = packageManager.getLaunchIntentForPackage(pkg) ?: return false
+        intent.flags = Intent.FLAG_ACTIVITY_NO_ANIMATION
+        return try {
+            @Suppress("DEPRECATION")
+            startActivityForResult(intent, briefLaunchRequestCode)
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
+        }
+    }
+
+    /** Closes the activity opened by [launchAppBriefly], returning to ours. */
+    private fun closeBriefApp(): Boolean {
+        finishActivity(briefLaunchRequestCode)
+        return true
     }
 
     private fun launchApp(pkg: String): Boolean {

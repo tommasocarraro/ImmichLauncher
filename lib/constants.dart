@@ -46,6 +46,14 @@ class AppConstants {
   /// (a single UDP packet can be lost).
   static const wakeResendInterval = Duration(seconds: 30);
 
+  /// When Tailscale was stopped by the system, how long to let its process
+  /// start after opening it before sending the connect request.
+  static const tailscaleStartupDelay = Duration(milliseconds: 1500);
+
+  /// How long to wait for the purely background connect request to work
+  /// before opening Tailscale briefly instead.
+  static const tailscaleBackgroundConnectTimeout = Duration(seconds: 4);
+
   /// How long to wait for Tailscale to connect after asking it to in the
   /// background, before falling back to opening the Tailscale app.
   static const tailscaleAutoConnectTimeout = Duration(seconds: 15);

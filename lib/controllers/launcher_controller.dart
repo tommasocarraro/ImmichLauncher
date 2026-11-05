@@ -185,7 +185,16 @@ class LauncherController extends ChangeNotifier {
     }
 
     _setProgress('Connecting Tailscale…');
-    if (await tailscale.requestConnect() &&
+    // 1. Fully in the background: works while Tailscale's process is alive.
+    if (!await tailscale.isStopped() &&
+        await tailscale.requestConnect() &&
+        await _waitForTailscale(AppConstants.tailscaleBackgroundConnectTimeout)) {
+      await _waitForTailnet();
+      return;
+    }
+    // 2. Tailscale is stopped or its process can't be started from the
+    //    background: open it for a moment, then come back.
+    if (await tailscale.requestConnectViaApp() &&
         await _waitForTailscale(AppConstants.tailscaleAutoConnectTimeout)) {
       await _waitForTailnet();
       return;

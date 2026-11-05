@@ -1,7 +1,7 @@
 name: immich_launcher
 description: "Wake your Immich server via Wake-on-LAN (locally) or a Tailscale relay (remotely) and open Immich."
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.1.1+3
 
 environment:
   sdk: ^3.6.0

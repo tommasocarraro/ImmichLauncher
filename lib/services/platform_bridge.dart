@@ -22,6 +22,19 @@ class PlatformBridge {
   Future<bool> isAppInstalled(String package) =>
       _call('isAppInstalled', {'package': package});
 
+  /// Whether [package] is in Android's "stopped" state, where it can't
+  /// receive broadcasts until one of its activities is launched.
+  Future<bool> isAppStopped(String package) =>
+      _call('isAppStopped', {'package': package});
+
+  /// Opens [package] on top of ImmichLauncher so that [closeBriefApp] can
+  /// dismiss it again.
+  Future<bool> launchAppBriefly(String package) =>
+      _call('launchAppBriefly', {'package': package});
+
+  /// Closes the app opened by [launchAppBriefly].
+  Future<bool> closeBriefApp() => _call('closeBriefApp');
+
   /// Opens the app's launcher activity. Returns false if it isn't installed.
   Future<bool> launchApp(String package) =>
       _call('launchApp', {'package': package});

@@ -36,14 +36,36 @@ class TailscaleService {
   Future<bool> isInstalled() =>
       bridge.isAppInstalled(AppConstants.tailscalePackage);
 
-  /// Asks Tailscale to connect without showing its UI. Returns false if the
-  /// installed Tailscale version doesn't support it. Connecting only works if
-  /// Tailscale is logged in and has been granted the VPN permission once.
+  /// Asks Tailscale to connect in the background, without showing its UI.
+  /// Returns false if the installed Tailscale version doesn't support it.
+  /// Connecting only works if Tailscale is logged in and has been granted the
+  /// VPN permission once.
+  ///
+  /// Android drops this request if Tailscale is in the "stopped" state, and
+  /// some OEM battery managers (vivo, Xiaomi, …) also refuse to start its
+  /// process for it when it isn't running. [requestConnectViaApp] covers that.
   Future<bool> requestConnect() => bridge.sendBroadcast(
         package: AppConstants.tailscalePackage,
         receiver: AppConstants.tailscaleReceiver,
         action: AppConstants.tailscaleConnectAction,
       );
+
+  /// Opens Tailscale for a moment so its process starts, asks it to connect,
+  /// then closes it again, returning to ImmichLauncher.
+  Future<bool> requestConnectViaApp() async {
+    if (!await bridge.launchAppBriefly(AppConstants.tailscalePackage)) {
+      return false;
+    }
+    await Future<void>.delayed(AppConstants.tailscaleStartupDelay);
+    final sent = await requestConnect();
+    await bridge.closeBriefApp();
+    return sent;
+  }
+
+  /// Whether Android has put Tailscale in the "stopped" state, where it
+  /// can't receive the background connect request at all.
+  Future<bool> isStopped() =>
+      bridge.isAppStopped(AppConstants.tailscalePackage);
 
   Future<bool> openApp() => bridge.launchApp(AppConstants.tailscalePackage);
 }
