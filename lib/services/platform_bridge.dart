@@ -31,6 +31,16 @@ class PlatformBridge {
   Future<bool> openUrlWithApp(String package, String url) =>
       _call('openUrlWithApp', {'package': package, 'url': url});
 
+  /// Sends an explicit broadcast [action] to [receiver] in [package]. Returns
+  /// false if that receiver doesn't exist.
+  Future<bool> sendBroadcast({
+    required String package,
+    required String receiver,
+    required String action,
+  }) =>
+      _call('sendBroadcast',
+          {'package': package, 'receiver': receiver, 'action': action});
+
   /// Opens [url] in whatever app handles it (usually the browser).
   Future<bool> openUrl(String url) => _call('openUrl', {'url': url});
 }

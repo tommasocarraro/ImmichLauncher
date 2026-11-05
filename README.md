@@ -17,7 +17,7 @@ and wake it with one tap — at home or anywhere in the world.
 | Button | What happens |
 | --- | --- |
 | **Open Locally** | Checks if the server answers on your home network. If not, it sends a **Wake-on-LAN magic packet** (UDP broadcast, port 9), shows a progress indicator while it waits for the server and Immich to come up, then opens Immich at `http://<local-ip>:<immich-port>`. |
-| **Open Remotely** | Checks that **Tailscale** is connected on the phone (opening the Tailscale app if it isn't, and waiting for you to connect). Checks if the server answers on its Tailscale IP. If not, it calls `GET http://<relay-ip>:<relay-port>/wake` on your **relay device**, which wakes the server for you. Once the server is up, it opens Immich at `http://<server-tailscale-ip>:<immich-port>`. |
+| **Open Remotely** | Makes sure **Tailscale** is connected on the phone, turning it on in the background if it isn't (it only opens the Tailscale app if that fails, e.g. when you are logged out). Checks if the server answers on its Tailscale IP. If not, it calls `GET http://<relay-ip>:<relay-port>/wake` on your **relay device**, which wakes the server for you. Once the server is up, it opens Immich at `http://<server-tailscale-ip>:<immich-port>`. |
 | **Status indicator** | Checks the server every 30 seconds (and whenever you return to the app): **green** = online (and through which route), **red** = offline. |
 | **Shut down server** | Visible only while the server is online. After a confirmation dialog, it logs in over **SSH** (to the local or Tailscale IP, depending on what you used last) and runs `sudo shutdown now`. |
 
@@ -130,12 +130,23 @@ On first launch ImmichLauncher asks for:
   <img src="docs/screenshots/wizard-step3.png" alt="Wizard – server access" width="220">
 </p>
 
-### 5. Configure the Immich app (once)
+### 5. Configure the Immich app (once) — required for remote access
 
-Immich does not accept a server address from other apps, so ImmichLauncher **opens the Immich app and copies the
-server URL to the clipboard**. Log in once; then, in the Immich app, enable
-**Settings → Networking → Automatic URL switching**, with your local URL on your home Wi-Fi and the Tailscale URL
-as the external URL, so Immich always uses the right address.
+The Immich app stores its own server address, and Android gives other apps no way to change it. If you
+logged in with the local IP, Immich keeps using it even when ImmichLauncher opened it remotely, so it
+can't load anything away from home. Fix it once, inside the Immich app:
+
+1. Log in (either address works).
+2. Open **Settings → Networking** and enable **Automatic URL switching**.
+3. **Local network**: set your home Wi-Fi name and `http://<server-local-ip>:2283`
+   (Immich asks for location permission so it can read the Wi-Fi name).
+4. **External network**: add `http://<server-tailscale-ip>:2283`.
+
+Immich then picks the right address by itself every time it starts.
+
+> Alternative: make the relay a Tailscale **subnet router** (`sudo tailscale set --advertise-routes=192.168.1.0/24`
+> and approve the route in the Tailscale admin console). The local IP is then reachable over Tailscale too,
+> so a single address works everywhere.
 
 ### Optional: shutdown without typing the sudo password
 
@@ -299,6 +310,8 @@ relay/                                # relay script + systemd unit
 | "The relay device did not answer" | `systemctl status wol-relay` on the relay; `curl http://<relay-ip>:8765/health` from another tailnet device. |
 | Server is on, but Immich doesn't answer | `docker compose ps` on the server; check the Immich port in Settings. |
 | Remote status stays red after boot | Tailscale must start at boot on the server: `sudo systemctl enable tailscaled`. |
+| Immich opens but can't load (remote) | The Immich app is still using the local IP: set up Automatic URL switching (setup step 5). |
+| Tailscale app opens instead of connecting in the background | Open Tailscale once, log in and accept the VPN permission prompt; after that it connects silently. |
 | "SSH host key changed" | Expected after reinstalling the server: Settings → Reset trusted SSH host keys. |
 
 ## Contributing

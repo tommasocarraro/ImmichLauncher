@@ -24,8 +24,8 @@ class ImmichOpener {
 
     if (await bridge.launchApp(pkg)) {
       await Clipboard.setData(ClipboardData(text: url));
-      return 'Immich opened. Server URL $url copied to the clipboard in case '
-          'the app asks for it.';
+      return 'Immich opened ($url copied). If Immich can\'t connect, enable '
+          'Settings → Networking → Automatic URL switching in the Immich app.';
     }
 
     if (await bridge.openUrl(url)) {

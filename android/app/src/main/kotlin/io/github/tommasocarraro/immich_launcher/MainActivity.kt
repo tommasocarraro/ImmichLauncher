@@ -33,6 +33,13 @@ class MainActivity : FlutterActivity() {
                             openUrl(call.argument<String>("url")!!, call.argument<String>("package"))
                         )
                         "openUrl" -> result.success(openUrl(call.argument<String>("url")!!, null))
+                        "sendBroadcast" -> result.success(
+                            sendExplicitBroadcast(
+                                call.argument<String>("package")!!,
+                                call.argument<String>("receiver")!!,
+                                call.argument<String>("action")!!,
+                            )
+                        )
                         else -> result.notImplemented()
                     }
                 } catch (e: Exception) {
@@ -61,6 +68,21 @@ class MainActivity : FlutterActivity() {
         val intent = packageManager.getLaunchIntentForPackage(pkg) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
+        return true
+    }
+
+    /**
+     * Sends [action] to the exported receiver [cls] of [pkg]. Used to tell
+     * Tailscale to connect in the background (its IPNReceiver handles
+     * com.tailscale.ipn.CONNECT_VPN). Returns false if the receiver is missing.
+     */
+    private fun sendExplicitBroadcast(pkg: String, cls: String, action: String): Boolean {
+        val intent = Intent(action).apply {
+            setClassName(pkg, cls)
+            addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        }
+        if (packageManager.queryBroadcastReceivers(intent, 0).isEmpty()) return false
+        sendBroadcast(intent)
         return true
     }
 

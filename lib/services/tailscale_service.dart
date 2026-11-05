@@ -36,5 +36,14 @@ class TailscaleService {
   Future<bool> isInstalled() =>
       bridge.isAppInstalled(AppConstants.tailscalePackage);
 
+  /// Asks Tailscale to connect without showing its UI. Returns false if the
+  /// installed Tailscale version doesn't support it. Connecting only works if
+  /// Tailscale is logged in and has been granted the VPN permission once.
+  Future<bool> requestConnect() => bridge.sendBroadcast(
+        package: AppConstants.tailscalePackage,
+        receiver: AppConstants.tailscaleReceiver,
+        action: AppConstants.tailscaleConnectAction,
+      );
+
   Future<bool> openApp() => bridge.launchApp(AppConstants.tailscalePackage);
 }

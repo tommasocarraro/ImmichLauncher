@@ -24,6 +24,11 @@ class AppConstants {
   static const immichPackage = 'app.alextran.immich';
   static const tailscalePackage = 'com.tailscale.ipn';
 
+  /// Tailscale's exported receiver that connects/disconnects the VPN without
+  /// opening the app (the same one Tasker/automation apps use).
+  static const tailscaleReceiver = 'com.tailscale.ipn.IPNReceiver';
+  static const tailscaleConnectAction = 'com.tailscale.ipn.CONNECT_VPN';
+
   // ---- Timing --------------------------------------------------------------
   /// How often the status indicator re-checks the server.
   static const statusPollInterval = Duration(seconds: 30);
@@ -40,6 +45,14 @@ class AppConstants {
   /// While the server is still unreachable, re-send the wake request this often
   /// (a single UDP packet can be lost).
   static const wakeResendInterval = Duration(seconds: 30);
+
+  /// How long to wait for Tailscale to connect after asking it to in the
+  /// background, before falling back to opening the Tailscale app.
+  static const tailscaleAutoConnectTimeout = Duration(seconds: 15);
+
+  /// After Tailscale connects, how long to wait for the tailnet (server or
+  /// relay) to become reachable before deciding the server is off.
+  static const tailscaleWarmupTimeout = Duration(seconds: 15);
 
   /// How long to wait for the user to connect Tailscale.
   static const tailscaleWaitTimeout = Duration(minutes: 2);

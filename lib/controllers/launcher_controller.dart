@@ -171,6 +171,9 @@ class LauncherController extends ChangeNotifier {
         return _openImmich(ConnectionRoute.remote);
       });
 
+  /// Makes sure Tailscale is up, connecting it in the background if needed.
+  /// Only opens the Tailscale app if the background connect doesn't work
+  /// (e.g. logged out, or VPN permission never granted).
   Future<void> _ensureTailscaleConnected() async {
     _setProgress('Checking Tailscale connection…');
     if (await tailscale.isConnected()) return;
@@ -180,21 +183,50 @@ class LauncherController extends ChangeNotifier {
           'Tailscale is not installed on this phone. Install it from the Play '
           'Store and log in to your tailnet.');
     }
-    _setProgress('Tailscale is off. Turn it on in the Tailscale app, then come '
-        'back here…');
-    await tailscale.openApp();
 
-    final deadline = DateTime.now().add(AppConstants.tailscaleWaitTimeout);
-    while (DateTime.now().isBefore(deadline)) {
-      await _sleep(AppConstants.tailscalePollInterval);
-      if (await tailscale.isConnected()) {
-        _setProgress('Tailscale connected.');
-        return;
-      }
+    _setProgress('Connecting Tailscale…');
+    if (await tailscale.requestConnect() &&
+        await _waitForTailscale(AppConstants.tailscaleAutoConnectTimeout)) {
+      await _waitForTailnet();
+      return;
+    }
+
+    _setProgress('Tailscale could not connect by itself. Turn it on in the '
+        'Tailscale app, then come back here…');
+    await tailscale.openApp();
+    if (await _waitForTailscale(AppConstants.tailscaleWaitTimeout)) {
+      await _waitForTailnet();
+      return;
     }
     throw const AppException(
         'Tailscale did not connect in time. Turn it on in the Tailscale app and '
         'try again.');
+  }
+
+  Future<bool> _waitForTailscale(Duration timeout) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      await _sleep(AppConstants.tailscalePollInterval);
+      if (await tailscale.isConnected()) return true;
+    }
+    return false;
+  }
+
+  /// Right after Tailscale connects, peers can take a few seconds to become
+  /// reachable. Wait until the server or the relay answers so a slow tunnel
+  /// isn't mistaken for a server that is off (or an unreachable relay).
+  Future<void> _waitForTailnet() async {
+    _setProgress('Tailscale connected, reaching your home network…');
+    final deadline = DateTime.now().add(AppConstants.tailscaleWarmupTimeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final results = await Future.wait([
+        probe.isHostOnline(_config.tailscaleIp, _probePorts),
+        probe.isHostOnline(_config.relayIp, [_config.relayPort]),
+      ]);
+      if (results.any((ok) => ok)) return;
+      await _sleep(AppConstants.tailscalePollInterval);
+    }
+    // Carry on anyway: the wake step reports a precise error if needed.
   }
 
   /// Makes sure Immich answers on [route], waking the server if necessary.
